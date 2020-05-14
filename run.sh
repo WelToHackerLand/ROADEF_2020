@@ -1,0 +1,15 @@
+./main_run --input A_set/A_01.json
+./main_run --input A_set/A_02.json
+./main_run --input A_set/A_03.json
+./main_run --input A_set/A_04.json
+./main_run --input A_set/A_05.json
+./main_run --input A_set/A_06.json
+./main_run --input A_set/A_07.json
+./main_run --input A_set/A_08.json
+./main_run --input A_set/A_09.json
+./main_run --input A_set/A_10.json
+./main_run --input A_set/A_11.json
+./main_run --input A_set/A_12.json
+./main_run --input A_set/A_13.json
+./main_run --input A_set/A_14.json
+./main_run --input A_set/A_15.json

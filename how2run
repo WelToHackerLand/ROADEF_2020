@@ -1,0 +1,8 @@
+Compile:
+g++ main_run.cpp -std=c++14 -O2 -o main_run
+
+Run:
+./main_run --input ../A_set/A_09.json --output output.txt --time-limit 300 --max-iter 10000000
+
+Check
+python3 checker.py ../A_set/A_09.json output.txt
