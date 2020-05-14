@@ -273,7 +273,7 @@ namespace NLSACO_solution {
                 // while ( (cnt < 20) && NLS_local_search::dp_Change_time_interventions_more_complex(instance, obj, alpha, beta, 0.01) ) { cnt ++;}
                 // while ( (cnt < 20) && NLS_local_search::dp_Change_time_and_swap_interventions(instance, obj, alpha, beta, 0.01) ) { cnt ++;}
                 // while ( (cnt < 20) && NLS_local_search::Change_time_start_interventions_best(instance, obj, alpha, beta, 0.1) ) { cnt ++;}
-                while ( (cnt < 20) && NLS_local_search::dp_Change_time_and_swap_interventions_update_version(instance, obj, alpha, beta, 0.01) ) { cnt ++;}
+                // while ( (cnt < 20) && NLS_local_search::dp_Change_time_and_swap_interventions_update_version(instance, obj, alpha, beta, 0.01) ) { cnt ++;}
                 // while ( (cnt < 20) && NLS_local_search::opt2(instance, obj, alpha, beta, 100, 0.01) ) { cnt ++; }
                 // while ( (cnt < 20) && NLS_local_search::opt2_version2(instance, obj, alpha, beta, 100, 4, 0.01) ) { cnt ++; }
 
@@ -297,11 +297,11 @@ namespace NLSACO_solution {
             cerr << "local search: ";
             int cnt = 0;
           
-            while ( ((cnt < 50) || (iBest.get_OBJ(instance) < gBest.get_OBJ(instance))) 
-            	    && NLS_local_search::dp_with_k_exchange(instance, iBest, alpha, beta, 0.001) ) {
-                cerr << iBest.get_OBJ(instance) <<" ";
-                cnt++;
-            }
+            // while ( ((cnt < 50) || (iBest.get_OBJ(instance) < gBest.get_OBJ(instance))) 
+            // 	    && NLS_local_search::dp_with_k_exchange(instance, iBest, alpha, beta, 0.001) ) {
+            //     cerr << iBest.get_OBJ(instance) <<" ";
+            //     cnt++;
+            // }
             // while ( ((cnt < 50) || (iBest.get_OBJ(instance) < gBest.get_OBJ(instance))) 
             // 	    && NLS_local_search::opt2_version2(instance, iBest, alpha, beta, 100, 40, 0.001) ) {
             //     cerr << iBest.get_OBJ(instance) <<" ";
