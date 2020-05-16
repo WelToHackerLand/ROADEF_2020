@@ -22,6 +22,7 @@ struct NLS_object {
     // vector<vector<int> > Interventions_at_time;
     vector<int> Time_Start_Intervention;
     int numFailedIntervention;
+    int valid;
 
     double get_OBJ(Problem_Instance &instance) {
         double obj = instance.alpha * obj1 + (1 - instance.alpha) * obj2; 
@@ -68,6 +69,7 @@ struct NLS_object {
 
         numFailedIntervention = instance.numInterventions;
         Time_Start_Intervention.resize(instance.numInterventions+1, 0);
+        valid = true;
     }
 
     bool Insert(Problem_Instance &instance, int i, int start_Time, double &increase_satisfied_LB) {
