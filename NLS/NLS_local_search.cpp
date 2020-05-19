@@ -795,6 +795,8 @@ namespace NLS_local_search {
         vector<int> type, vector<int> &ans, int curID, int cnt, int chlen, int diff, double &bestScore ) {
 
         if (cnt == 0) {
+            double oldScore = obj.get_OBJ(instance);
+
             int r = curID-1, l = r - (int) ans.size() + 1;
             assert(0 <= l && l <= r && r < (int) V.size());
             for (int id = l; id <= r; ++id) {
@@ -807,6 +809,7 @@ namespace NLS_local_search {
             }
 
             bool ok = true;
+            assert( obj.numFailedIntervention == 0 );
             if ( obj.LBResources_cost > 1e-5 || obj.UBResources_cost > 1e-5 ) ok = false;
             if ( ok ) {
                 for (int id = l; id <= r; ++id) {
@@ -816,7 +819,7 @@ namespace NLS_local_search {
             }  
 
             double newScore = obj.get_OBJ(instance);
-            if ( ok && newScore + diff < bestScore ) {
+            if ( ok && newScore + 1e-9 < bestScore ) {
                 bestScore = newScore;
                 for (int i = 0; i < (int) ans.size(); ++i) ans[i] = type[i];
             }
@@ -830,15 +833,18 @@ namespace NLS_local_search {
                 obj.Insert_no_care_UB(instance, i, oldTime, nAC, nVL, costLB, costUB);
             }
 
-            if (ok) return newScore;
-            return (double) 1e9 + 7;
+            assert( abs(obj.get_OBJ(instance) - oldScore) <= 1e-6 );
+
+            // if (ok) 
+            return bestScore;
+            // return (double) 1e9 + 7;
         }
 
         int i = V[curID].second;
-        double score = (double) 1e9 + 7;
+        double score = (double) bestScore;
         for (int dir = -chlen; dir <= chlen; ++dir) {
             int t = obj.Time_Start_Intervention[i] + dir;
-            if ( dir == 0 || t <= 0 || t >= instance.tmax[i] ) continue;
+            if ( dir == 0 || t <= 0 || t > instance.tmax[i] ) continue;
             if ( t + instance.delta[i][t] > instance.T + 1 ) continue;
 
             int tt = (int) ans.size() - cnt;
@@ -1559,6 +1565,7 @@ namespace NLS_local_search {
                 obj.Insert_no_care_UB(instance, i, newTimeStart, ACLB, VLUB, LB_cost, UB_cost);
 
                 bool ok = true; 
+                assert( obj.numFailedIntervention == 0 );
                 if ( obj.LBResources_cost > 1e-4 || obj.UBResources_cost > 1e-4 ) ok = false;
                 if (!ok) {
                     obj.Erase_no_care_UB(instance, i, newTimeStart, ACLB, VLUB);
@@ -1627,6 +1634,10 @@ namespace NLS_local_search {
                 obj.Erase_no_care_UB(instance, j, time_j, nAC, nVL);
                 obj.Insert_no_care_UB(instance, i, time_j, nAC, nVL, costLB, costUB);
                 obj.Insert_no_care_UB(instance, j, time_i, nAC, nVL, costLB, costUB);
+
+                assert( obj.numFailedIntervention == 0 );
+                assert( obj.LBResources_cost <= 1e-5 );
+                assert( obj.UBResources_cost <= 1e-5 );
                 
                 double newScore = obj.get_OBJ(instance);
                 if ( newScore + diff < bestScore ) {
@@ -1649,6 +1660,13 @@ namespace NLS_local_search {
 
                 double copyScore = bestScore;
                 double score_exchange = k_exchange_brute(instance, obj, V, type, ans, curID-sz_k+1, sz_k, chlen, diff, copyScore );
+                if ( abs(score_exchange-copyScore) > 1e-7 ) {
+                        cerr << "SCORE EXCHANGE != COPY SCORE\n";
+                    cerr << setprecision(10) << fixed << " " << score_exchange << '\n';
+                    cerr << setprecision(10) << fixed << " " << copyScore << '\n';
+                    exit(0);
+                }
+                assert( abs(score_exchange-copyScore) <= 1e-7 );
 
                 if (score_exchange + diff < bestScore) {
                         cerr << "*";
@@ -1665,6 +1683,8 @@ namespace NLS_local_search {
                         obj.Insert_no_care_UB(instance, inter, newTime, nAC, nVL, costLB, costUB);
                     }
                     returnVal = true;
+
+                    assert( abs(bestScore-obj.get_OBJ(instance)) <= 1e-6 );
                 }
             }
 
@@ -1686,7 +1706,6 @@ namespace NLS_local_search {
                     int curPoint = curID - sz_p + 1;
                     for (int j = 0; j < (int) per.size(); ++j) {
                         int inter = V[curPoint].second, t = oldTime[per[j]];
-                            // cerr << ":)) " << inter << " " << t << '\n';
                         if ( instance.tmax[inter] < t ) { cek_start_time = false; break; }
                         if ( t + instance.delta[inter][t] > instance.T+1 ) { cek_start_time = false; break; }   
                         ++curPoint;
@@ -1744,6 +1763,9 @@ namespace NLS_local_search {
                         ++curPoint;
                     }
                     assert( abs(obj.get_OBJ(instance) - oldScore) <= 1e-6 );
+                    assert( obj.numFailedIntervention == 0 );
+                    assert( obj.LBResources_cost <= 1e-6 );
+                    assert( obj.UBResources_cost <= 1e-6 );
 
                 } while (next_permutation(per.begin(), per.end()));
 

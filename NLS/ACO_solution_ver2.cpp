@@ -280,16 +280,16 @@ namespace ACO_solution {
                 // while ( (cnt < 20) && NLS_local_search::opt2_version2(instance, obj, alpha, beta, 100, 4, 0.01) ) { cnt ++; }
                 // while ( (cnt < 20) && NLS_local_search::dp_with_k_exchange(instance, obj, alpha, beta, 4, 0.01) ) { cnt ++; }
                 // cerr << obj.get_OBJ(instance) << " ";
-                // while ( (cnt < 20) && NLS_local_search::all_LS_ver2(instance, obj, alpha, beta, 0.01) ) { 
-                    // cnt ++; 
-                    // cerr << obj.get_OBJ(instance) << " ";
-                // }
-                // cerr << '\n';
-                while ( (cnt < 20) && NLS_bitmask_localsearch::process(instance, obj, 4, 0.01) ) { 
+                while ( (cnt < 20) && NLS_local_search::all_LS_ver2(instance, obj, alpha, beta, 0.01) ) { 
                     cnt ++; 
                     cerr << obj.get_OBJ(instance) << " ";
                 }
-                exit(0);
+                cerr << '\n';
+                // while ( (cnt < 20) && NLS_bitmask_localsearch::process(instance, obj, 4, 0.01) ) { 
+                //     cnt ++; 
+                //     cerr << obj.get_OBJ(instance) << " ";
+                // }
+                // exit(0);
 
                 /// update iBest
                 if ( !flag_iBest ) { iBest = obj; flag_iBest = true; }
