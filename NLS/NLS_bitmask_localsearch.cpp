@@ -47,7 +47,7 @@ namespace NLS_bitmask_localsearch {
             for (int mask = (1<<numBit)-1; mask >= 0; --mask) {
                 if ( !dp[type][mask].valid ) continue;
 
-                    cerr << "??? " << type << " " << t << " " << mask << '\n';
+                    // cerr << "??? " << type << " " << t << " " << mask << '\n';
 
                 /// (mask, type) -> (mask-(1<<bit), type)
                 NLS_object tmpOBJ = dp[type][mask];
@@ -64,6 +64,7 @@ namespace NLS_bitmask_localsearch {
 
                     // resource constraint
                     int oldTime = tmpOBJ.Time_Start_Intervention[inter];
+                    assert( oldTime <= 0 );
                     if ( !tmpOBJ.check_resource_constraint(instance, tmpOBJ, inter, t) ) continue;
 
                     // compare score
@@ -102,29 +103,30 @@ namespace NLS_bitmask_localsearch {
                     if ( getBIT(mask, numBit-1) ) continue;
 
                     int i = lsTime[id+1].second, oldTime = tmpOBJ.Time_Start_Intervention[i];
-                    if ( lsTime[id+1].first != oldTime ) {
-                        cerr << "??? " << mask << " " << i << " " << oldTime << " " << lsTime[id+1].first << '\n';
-                        cerr << "cc " << lsTime[id].first << " " << lsTime[id].second << '\n';
-                        cerr << dp[type][mask].Time_Start_Intervention[i] << '\n';
-                        exit(0);
-                    }
-                    assert(lsTime[id+1].first == oldTime);
+                        
+                        if ( lsTime[id+1].first != oldTime ) {
+                            cerr << "??? " << mask << " " << i << " " << oldTime << " " << lsTime[id+1].first << '\n';
+                            cerr << "cc " << lsTime[id].first << " " << lsTime[id].second << '\n';
+                            cerr << dp[type][mask].Time_Start_Intervention[i] << '\n';
+                            exit(0);
+                        }
+                        assert(lsTime[id+1].first == oldTime);
                     
                     // /// intervention i : [1, oldTime]
-                    // int nAC = 0, nVL = 0;
-                    // double costLB = 0, costUB = 0;
-                    // tmpOBJ.Erase_no_care_UB(instance, i, oldTime, nAC, nVL);
-                    // for (int newTime = 1; newTime <= max(instance.tmax[i], oldTime); ++newTime) {
-                    //     if ( newTime + instance.delta[i][newTime] > instance.T+1 ) continue;
-                    //     if ( !tmpOBJ.exclusionChecking(instance, i, newTime) ) continue;
-                    //     if ( !tmpOBJ.check_resource_constraint(instance, tmpOBJ, i, newTime) ) continue;
+                    int nAC = 0, nVL = 0;
+                    double costLB = 0, costUB = 0;
+                    tmpOBJ.Erase_no_care_UB(instance, i, oldTime, nAC, nVL);
+                    for (int newTime = 1; newTime <= max(instance.tmax[i], oldTime); ++newTime) {
+                        if ( newTime + instance.delta[i][newTime] > instance.T+1 ) continue;
+                        if ( !tmpOBJ.exclusionChecking(instance, i, newTime) ) continue;
+                        if ( !tmpOBJ.check_resource_constraint(instance, tmpOBJ, i, newTime) ) continue;
 
-                    //     tmpOBJ.Insert_no_care_UB(instance, i, newTime, nAC, nVL, costLB, costUB);
-                    //     double newScore = tmpOBJ.get_OBJ(instance);
-                    //     if ( !dp[1-type][mask*2].valid || dp[1-type][mask*2].get_OBJ(instance) - newScore > 1e-9 ) dp[1-type][mask*2] = tmpOBJ;
-                    //     tmpOBJ.Erase_no_care_UB(instance, i, newTime, nAC, nVL);
-                    // }
-                    // tmpOBJ.Insert_no_care_UB(instance, i, oldTime, nAC, nVL, costLB, costUB);
+                        tmpOBJ.Insert_no_care_UB(instance, i, newTime, nAC, nVL, costLB, costUB);
+                        double newScore = tmpOBJ.get_OBJ(instance);
+                        if ( !dp[1-type][mask*2].valid || dp[1-type][mask*2].get_OBJ(instance) - newScore > 1e-9 ) dp[1-type][mask*2] = tmpOBJ;
+                        tmpOBJ.Erase_no_care_UB(instance, i, newTime, nAC, nVL);
+                    }
+                    tmpOBJ.Insert_no_care_UB(instance, i, oldTime, nAC, nVL, costLB, costUB);
 
                     /// internvention i : [t, oldTime];
                     if ( !getBIT(mask, numBit-1) ) {
@@ -146,16 +148,16 @@ namespace NLS_bitmask_localsearch {
             type = 1 - type;
         }
 
-            cerr << "T_T: " << type << " " << dp[type][0].valid << '\n';
-            cerr << "??? " << setprecision(10) << fixed << dp[type][0].get_OBJ(instance) << '\n';
-            cerr << "plz " << setprecision(10) << fixed << obj.get_OBJ(instance) << '\n';
+            // cerr << "T_T: " << type << " " << dp[type][0].valid << '\n';
+            // cerr << "??? " << setprecision(10) << fixed << dp[type][0].get_OBJ(instance) << '\n';
+            // cerr << "plz " << setprecision(10) << fixed << obj.get_OBJ(instance) << '\n';
 
         if ( dp[type][0].valid && obj.get_OBJ(instance) - dp[type][0].get_OBJ(instance) >= diff ) {
             obj = dp[type][0];
             assert( obj.numFailedIntervention == 0 );
             assert( obj.LBResources_cost <= 1e-5 );
             assert( obj.UBResources_cost <= 1e-5 );
-                cerr << "3dm\n";
+                // cerr << "3dm\n";
             return true;
         }
         return false;

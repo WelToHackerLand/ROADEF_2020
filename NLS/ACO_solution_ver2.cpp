@@ -280,16 +280,22 @@ namespace ACO_solution {
                 // while ( (cnt < 20) && NLS_local_search::opt2_version2(instance, obj, alpha, beta, 100, 4, 0.01) ) { cnt ++; }
                 // while ( (cnt < 20) && NLS_local_search::dp_with_k_exchange(instance, obj, alpha, beta, 4, 0.01) ) { cnt ++; }
                 // cerr << obj.get_OBJ(instance) << " ";
-                while ( (cnt < 20) && NLS_local_search::all_LS_ver2(instance, obj, alpha, beta, 0.01) ) { 
-                    cnt ++; 
-                    cerr << obj.get_OBJ(instance) << " ";
-                }
-                cerr << '\n';
-                // while ( (cnt < 20) && NLS_bitmask_localsearch::process(instance, obj, 4, 0.01) ) { 
+                // while ( (cnt < 20) && NLS_local_search::all_LS_ver2(instance, obj, alpha, beta, 0.01) ) { 
                 //     cnt ++; 
                 //     cerr << obj.get_OBJ(instance) << " ";
                 // }
-                // exit(0);
+                // cerr << '\n';
+                while ( (cnt < 20) && NLS_bitmask_localsearch::process(instance, obj, 4, 0.01) ) { 
+                        cerr << "?";
+                    cnt ++; 
+                    // cerr << obj.get_OBJ(instance) << " ";
+                }
+                cerr << '\n';
+                // cerr << " ||| ";
+                // while ( (cnt < 20) && NLS_local_search::all_LS_ver2(instance, obj, alpha, beta, 0.01) ) { 
+                //     cnt ++; 
+                //     cerr << obj.get_OBJ(instance) << " ";
+                // }
 
                 /// update iBest
                 if ( !flag_iBest ) { iBest = obj; flag_iBest = true; }
@@ -315,10 +321,15 @@ namespace ACO_solution {
             //     cnt++;
             // }
             while ( ((cnt < 50) || (iBest.get_OBJ(instance) < gBest.get_OBJ(instance))) 
-            	    && NLS_local_search::dp_with_k_exchange_ver2(instance, iBest, alpha, beta, 4, 2, 4, 0.001) ) {
+            	    && NLS_bitmask_localsearch::process(instance, iBest, 4, 0.01) ) {
                 cerr << iBest.get_OBJ(instance) <<" ";
                 cnt++;
             }
+            // while ( ((cnt < 50) || (iBest.get_OBJ(instance) < gBest.get_OBJ(instance))) 
+            // 	    && NLS_local_search::dp_with_k_exchange_ver2(instance, iBest, alpha, beta, 4, 2, 4, 0.001) ) {
+            //     cerr << iBest.get_OBJ(instance) <<" ";
+            //     cnt++;
+            // }
             // while ( ((cnt < 50) || (iBest.get_OBJ(instance) < gBest.get_OBJ(instance))) 
             // 	    && NLS_local_search::all_LS_ver2(instance, iBest, alpha, beta, 0.001) ) {
             //     cerr << iBest.get_OBJ(instance) <<" ";
