@@ -1,38 +1,44 @@
+// all_LS_ver2 -> all ants
+// dp_with_k_exchange -> iBest
+// more dp_with_k_exchange -> gBest
+
 #ifndef ACO_SOLUTION_VER2
 #define ACO_SOLUTION_VER2
 
 #include "../utils.cpp"
 #include "../Problem_ver2.cpp"
-#include "../config.cpp"
 #include "NLS_object_ver2.cpp"
 #include "NLS_local_search.cpp"
-#include "NLS_repair_procedure.cpp"
-#include "NLS_destroy_procedure.cpp"
-#include "NLS_bitmask_localsearch.cpp"
 
 namespace ACO_solution {
-    int nAnts, iLimit, R_per, C_per, limit_percent_chosen, numKeep;
+    int nAnts, iLimit, R_per, C_per, addRan, limit_percent_chosen, numKeep;
     double Rho, Phe_max, Phe_min;
 
     void Assign_parameter(Problem_Instance &instance) {
         iLimit = 10000;
         numKeep = 20;
 
-        nAnts = 20;
-        R_per = 60;
-        C_per = 60;
-        Rho = 0.90;
-        Phe_max = 1.0;
-        Phe_min = Phe_max / (double) (instance.T * instance.numInterventions);
+        // nAnts = 2;
 
-        cerr<<"quantile     "<<instance.quantile<<'\n';
-        cerr<<"nAnts		"<< nAnts <<"\n";
-        cerr<<"R_per		"<< R_per <<"\n";
-        cerr<<"C_per		"<< C_per <<"\n";
-        cerr<<"rho   		"<< Rho <<"\n";
-        cerr<<"numKeep		"<< numKeep <<"\n";
-        cerr<<"Phe_max		"<< Phe_max <<"\n";
-        cerr<<"Phe_min		"<< Phe_min <<"\n\n";
+        nAnts = 20;
+        R_per = 85;
+        C_per = 85;
+        addRan = 10;
+        Rho = 0.5;
+        Phe_max = 1.0;
+        Phe_min = Phe_max / (5 * instance.T);
+
+        cerr<<"nAnts						"<< nAnts <<"\n";
+        cerr<<"R_per						"<< R_per <<"\n";
+        cerr<<"C_per						"<< C_per <<"\n";
+        cerr<<"rho   						"<< Rho <<"\n";
+        cerr<<"numKeep						"<< numKeep <<"\n";
+        cerr<<"Phe_max						"<< Phe_max <<"\n";
+        cerr<<"Phe_min						"<< Phe_min <<"\n";
+
+        cerr<<"instance.T					"<< instance.T <<"\n";
+        cerr<<"instance.numInterventions		"<< instance.numInterventions <<"\n";
+        cerr<<"instance.numResources 			"<< instance.numResources <<"\n\n";
     }
 
     vector<vector<double> > prepare_obj1_cost(Problem_Instance &instance) {
@@ -53,25 +59,16 @@ namespace ACO_solution {
         return obj1_cost;
     }
 
-    void random_solution(Problem_Instance &instance, NLS_object &obj, double alpha, double beta) {
-        obj.Initialize(instance);
-
-        while (true) {
-            vector<int> V;
-            for (int i = 1; i <= instance.numInterventions; ++i) V.push_back(i);
-            instance.Random_Priority_Descent_Delta_Sort(V);
-
-            NLS_repair_procedure::process_version_2(instance, V, obj, alpha, beta);
-            if (obj.numFailedIntervention == 0) break;
-        }
-    }
 
     vector<int> ACO_ruin(Problem_Instance &instance, NLS_object &obj, vector<vector<double> > &phe) {
         vector<pair<double, int> > V;
         vector<int> Erase_list;
+        //int addRan = rand() % 20;
+        cerr << "with " << (R_per + addRan) * (C_per + addRan) / 100 << "% ";
+
         for (int i = 1; i <= instance.numInterventions; ++i) {
             int keep_percent = rand() % 101;
-            if ( (double) keep_percent <= (double) R_per ) {
+            if ( (double) keep_percent <= (double) R_per + addRan) {
                 int t = obj.Time_Start_Intervention[i];
                 V.push_back( make_pair(phe[i][t], i) );
             }
@@ -81,8 +78,8 @@ namespace ACO_solution {
         sort(V.begin(),V.end());
         reverse(V.begin(), V.end());
 
-        int numKeep = (int) V.size() * C_per / 100;
-        while ( (int) V.size() > numKeep ) {
+        int numKeepInt = (int) V.size() * (C_per + addRan) / 100;
+        while ( (int) V.size() > numKeepInt ) {
             Erase_list.push_back( V.back().second );
             V.pop_back();
         }
@@ -123,9 +120,12 @@ namespace ACO_solution {
                 if ( canList[i].size() < min_size ) 
                     min_size = canList[i].size();
 
+
             for (int i : Erase_list) 
                 if ( canList[i].size() - min_size <= 3 )              
-                    candidate.push_back(i);
+                    candidate.push_back(i); 
+
+           	//cerr<<min_size << " " << candidate.size()<<"\n";
 
             assert( min_size < (int) 1e9 );
 
@@ -148,7 +148,7 @@ namespace ACO_solution {
 
             priority_queue<pair<double, int> > heap;
             for (int t : canList[i]) {
-                double total_score = obj1_cost[i][t];// * phe[i][t];
+                double total_score = obj1_cost[i][t] * (1.0 / phe[i][t]);
                 heap.push( make_pair(total_score, t) );
                 while ( (int) heap.size() > numKeep ) heap.pop();
             }   
@@ -167,13 +167,16 @@ namespace ACO_solution {
                 double LB_score = 0; //costLB * alpha;
                 double UB_score = 0; //costUB * beta;
                 double total_score = ( 1 / (obj_score - LB_score + UB_score) + 1 ) * phe[i][t];
+                //double total_score = 1 / (obj_score - LB_score + UB_score);
 
                 obj.Erase_no_care_UB(instance, i, t, numAcceptedLB, numViolatedUB);
                 V.push_back( make_pair(total_score, t) );
                 ORE_TOTAL += total_score;
             }
 
-            double num = ORE_TOTAL * (double) ( rand() % 101 ) / 100.0;  
+            random_shuffle ( V.begin(), V.end() );
+
+            double num = ORE_TOTAL * (double) ( rand() % 1000001 ) / 1000000.0;  
             int best_Time = V.back().second;
             for (int id = 0; id < (int) V.size(); ++id) { 
                 num -= V[id].first;
@@ -223,6 +226,15 @@ namespace ACO_solution {
         /// Assign parameter
         Assign_parameter(instance);
 
+        ofstream log(outputFile + ".log");
+        log<<"nAnts						"<< nAnts <<"\n";
+        log<<"R_per						"<< R_per <<"\n";
+        log<<"C_per						"<< C_per <<"\n";
+        log<<"rho   						"<< Rho <<"\n";
+        log<<"numKeep						"<< numKeep <<"\n";
+        log<<"Phe_max						"<< Phe_max <<"\n";
+        log<<"Phe_min						"<< Phe_min <<"\n";
+
         /// create phe array
         vector<vector<double> > phe;
         phe.resize( instance.numInterventions+1 );
@@ -232,21 +244,22 @@ namespace ACO_solution {
         vector<vector<double> > obj1_cost = prepare_obj1_cost(instance);
 
         /// create random solution 
-        NLS_object gBest; 
+        NLS_object gBest, uBest; 
         bool flag_gBest = false;
+        int flag_uBest = 0;
 
         /// main algorithm
         clock_t startTime = clock();
+
+        int lastLoop = 0;
         for (int loop = 1; loop <= iLimit; ++loop) {
             if ((double)(clock() - startTime) / CLOCKS_PER_SEC > timeLimit) break;
 
-            cerr << "\nLOOP: #" << loop;
-            if ( flag_gBest ) cerr << " --> " << gBest.get_OBJ(instance) << '\n';
-            else cerr << " --> " << -1 << '\n';
 
             NLS_object iBest;
             bool flag_iBest = false;
             for (int ant = 1; ant <= nAnts; ++ant) {
+            	cerr << "\n\nant " << ant <<" ";
                 /// ruin
                 vector<int> Erase_list;
                 NLS_object obj;
@@ -269,33 +282,20 @@ namespace ACO_solution {
 
                 //    cerr << "ANT: " << ant << " " << obj.get_OBJ(instance) << '\n';
 
-                // cerr << "PRE_LS: " << obj.get_OBJ(instance) << '\n';
+                cerr << " -> " << obj.get_OBJ(instance) << '\n';
                 int cnt = 0;
-                // while ( (cnt < 20) && NLS_local_search::dp_Change_time_interventions_random_time_sort(instance, obj, alpha, beta, 0.01) ) { cnt ++;}
-                // while ( (cnt < 20) && NLS_local_search::dp_Change_time_interventions_more_complex(instance, obj, alpha, beta, 0.01) ) { cnt ++;}
-                // while ( (cnt < 20) && NLS_local_search::dp_Change_time_and_swap_interventions(instance, obj, alpha, beta, 0.01) ) { cnt ++;}
-                // while ( (cnt < 20) && NLS_local_search::Change_time_start_interventions_best(instance, obj, alpha, beta, 0.1) ) { cnt ++;}
-                // while ( (cnt < 20) && NLS_local_search::dp_Change_time_and_swap_interventions_update_version(instance, obj, alpha, beta, 0.01) ) { cnt ++;}
-                // while ( (cnt < 20) && NLS_local_search::opt2(instance, obj, alpha, beta, 100, 0.01) ) { cnt ++; }
-                // while ( (cnt < 20) && NLS_local_search::opt2_version2(instance, obj, alpha, beta, 100, 4, 0.01) ) { cnt ++; }
-                // while ( (cnt < 20) && NLS_local_search::dp_with_k_exchange(instance, obj, alpha, beta, 4, 0.01) ) { cnt ++; }
-                // cerr << obj.get_OBJ(instance) << " ";
-                // while ( (cnt < 20) && NLS_local_search::all_LS_ver2(instance, obj, alpha, beta, 0.01) ) { 
-                //     cnt ++; 
-                //     cerr << obj.get_OBJ(instance) << " ";
-                // }
-                // cerr << '\n';
-                while ( (cnt < 20) && NLS_bitmask_localsearch::process(instance, obj, 4, 0.01) ) { 
-                        cerr << "?";
-                    cnt ++; 
-                    // cerr << obj.get_OBJ(instance) << " ";
+                bool flag_ls = true;
+                while ( (cnt < 20) && NLS_local_search::all_LS_ver2_for_each_ant(instance, obj, alpha, beta, 0.1)) {
+                        // break;
+                	cnt ++;
+                	cerr << obj.get_OBJ(instance) << " - ";
                 }
-                cerr << '\n';
-                // cerr << " ||| ";
-                // while ( (cnt < 20) && NLS_local_search::all_LS_ver2(instance, obj, alpha, beta, 0.01) ) { 
-                //     cnt ++; 
-                //     cerr << obj.get_OBJ(instance) << " ";
-                // }
+
+                //cnt = 0;
+                //while ( (cnt < 20) && NLS_local_search::Change_time_start_interventions_best(instance, obj, alpha, beta, 0.1) ) { cnt ++;}
+                //     cerr << "local search: " << obj.get_OBJ(instance) << '\n';
+                
+                // cerr << "\n\n\n";
 
                 /// update iBest
                 if ( !flag_iBest ) { iBest = obj; flag_iBest = true; }
@@ -304,87 +304,177 @@ namespace ACO_solution {
                 if ( iBest_score > obj_score + 1e-6 ) iBest = obj;
             }
 
-                cerr << "ibest = " << iBest.get_OBJ(instance) 
-                    << " " << "LB_cost = " << iBest.LBResources_cost << " " 
-                    << " " << "UB_cost = " << iBest.UBResources_cost << " "
-                    << " " << "iBest_score = " << iBest.getScore(instance, alpha, beta) << " "
-                    << "found at: " << (double)(clock() - startTime) / CLOCKS_PER_SEC << '\n';
-
             /// update gBest
             if ( !flag_iBest ) continue;
-            cerr << "local search: ";
+            cerr << "\n#" << loop << " --> " << iBest.get_OBJ(instance) << "\n";
+            log << "\n#" << loop << " --> " << iBest.get_OBJ(instance) << "\n";
+
+            cerr << "local search ... ";
+            log << "local search ... ";
             int cnt = 0;
-          
-            // while ( ((cnt < 50) || (iBest.get_OBJ(instance) < gBest.get_OBJ(instance))) 
-            // 	    && NLS_local_search::dp_Change_time_and_swap_interventions_update_version(instance, iBest, alpha, beta, 0.001) ) {
-            //     cerr << iBest.get_OBJ(instance) <<" ";
-            //     cnt++;
-            // }
-            while ( ((cnt < 50) || (iBest.get_OBJ(instance) < gBest.get_OBJ(instance))) 
-            	    && NLS_bitmask_localsearch::process(instance, iBest, 4, 0.01) ) {
-                cerr << iBest.get_OBJ(instance) <<" ";
+            bool flag_ls = true;
+            int rand_ls;
+
+            while ( (cnt < 20) && flag_ls ) {
                 cnt++;
+            	rand_ls = rand() % 100;
+            	    
+        	    if (rand_ls < 25) {
+                        // continue;
+					flag_ls = NLS_local_search::dp_with_k_exchange_ver3(instance, iBest, alpha, beta, 2, 7, 0.0001);
+					cerr<<"(2, 7, ";
+					log<<"(2, 7, ";
+        	    }
+				else if (rand_ls < 50) {
+                        // continue;
+					flag_ls = NLS_local_search::dp_with_k_exchange_ver3(instance, iBest, alpha, beta, 3, 3, 0.0001);
+					cerr<<"(3, 3, ";
+					log<<"(3, 3, ";
+				}
+				else if (rand_ls < 75) {
+                        // continue;
+					flag_ls = NLS_local_search::dp_with_k_exchange_ver3(instance, iBest, alpha, beta, 4, 2, 0.0001);
+					cerr<<"(4, 2, ";
+					log<<"(4, 2, ";
+        	    }
+				else {
+                        // continue;
+					flag_ls = NLS_local_search::dp_with_k_exchange_ver3(instance, iBest, alpha, beta, 8, 1, 0.0001);
+					cerr<<"(8, 1, ";
+					log<<"(8, 1, ";
+				}
+
+                cerr << iBest.get_OBJ(instance) <<") - ";
+                log << iBest.get_OBJ(instance) <<") - ";
             }
-            // while ( ((cnt < 50) || (iBest.get_OBJ(instance) < gBest.get_OBJ(instance))) 
-            // 	    && NLS_local_search::dp_with_k_exchange_ver2(instance, iBest, alpha, beta, 4, 2, 4, 0.001) ) {
-            //     cerr << iBest.get_OBJ(instance) <<" ";
-            //     cnt++;
-            // }
-            // while ( ((cnt < 50) || (iBest.get_OBJ(instance) < gBest.get_OBJ(instance))) 
-            // 	    && NLS_local_search::all_LS_ver2(instance, iBest, alpha, beta, 0.001) ) {
-            //     cerr << iBest.get_OBJ(instance) <<" ";
-            //     cnt++;
-            // }
-            // while ( ((cnt < 50) || (iBest.get_OBJ(instance) < gBest.get_OBJ(instance))) 
-            // 	    && NLS_local_search::dp_Change_time_interventions_random_time_sort(instance, iBest, alpha, beta, 0.001) ) {
-            //     cerr << iBest.get_OBJ(instance) <<" ";
-            //     cnt++;
-            // }
-            while ( ((cnt < 50) || (iBest.get_OBJ(instance) < gBest.get_OBJ(instance))) 
-            	    && NLS_local_search::dp_Change_time_interventions(instance, iBest, alpha, beta, 0.001) ) {
-                cerr << "||| ";
-                cerr << iBest.get_OBJ(instance) <<" ";
-                cnt++;
+            cerr << "\n";
+            log << "\n";
+
+                assert( iBest.numFailedIntervention == 0 );
+                assert( iBest.LBResources_cost < 1e-6 );
+                assert( iBest.UBResources_cost < 1e-6 );
+
+            if ( flag_uBest == 0 ) 
+            	{ uBest = iBest; flag_uBest = 1;}
+            else {
+            	flag_uBest++;
+            	if (uBest.getScore(instance, alpha, beta) > iBest.getScore(instance, alpha, beta) + 1e-6)
+            		uBest = iBest;
             }
-            cerr << "\n --- " << iBest.get_OBJ(instance) << '\n';
 
-            if ( !flag_gBest ) { gBest = iBest; flag_gBest = true; }
+            if ( !flag_gBest ) { gBest = iBest; flag_gBest = true; flag_uBest = 0;}
 
-            double iBest_score = iBest.getScore(instance, alpha, beta);
-            double gBest_score = gBest.getScore(instance, alpha, beta);
+            if ( (flag_uBest > 5) || (gBest.getScore(instance, alpha, beta) > uBest.getScore(instance, alpha, beta) + 1e-6) ) {
 
-            if (iBest.LBResources_cost < 1e-5 && iBest.UBResources_cost < 1e-5) 
-                assert( abs(iBest_score - iBest.get_OBJ(instance)) < 1e-5 );
+            	cerr << "\napply more local search for uBest ("<<flag_uBest<<")...";
+            	log << "\napply more local search for uBest ("<<flag_uBest<<")...";
+            	flag_uBest = 0;
+            	flag_ls = true;
+           
+            	while (flag_ls) {
 
-            if ( gBest_score > iBest_score + 1e-6 ) {
-                gBest = iBest;
-                cerr << "new best solution = " << gBest.get_OBJ(instance) 
-                    << " " << "LB_cost = " << gBest.LBResources_cost << " " 
-                    << " " << "UB_cost = " << gBest.UBResources_cost << " "
-                    << " " << "gBest_score = " << gBest.getScore(instance, alpha, beta) << " "
-                    << "found at: " << (double)(clock() - startTime) / CLOCKS_PER_SEC << '\n';
+            		flag_ls = NLS_local_search::opt2_version2(instance, uBest, alpha, beta, 30, 5, 0.0001);
+					if (flag_ls) cerr<<"(b30, 10, " << uBest.get_OBJ(instance) <<") - ";;
+					if (flag_ls) log<<"(b30, 10, " << uBest.get_OBJ(instance) <<") - ";;
 
-                // if (gBest.LBResources_cost < 1e-5 && gBest.UBResources_cost < 1e-5) 
-                //     assert( abs(gBest.get_OBJ(instance) - gBest.getScore(instance)) <= 1e-6 );
+	            	rand_ls = rand() % 100;
+	            	    
+	        	    if (rand_ls < 25) {
+                            // continue;
+						if (NLS_local_search::dp_with_k_exchange_ver3(instance, uBest, alpha, beta, 2, 25, 0.0001)) {
+							flag_ls = true;
+							cerr<<"(2, 25, " << uBest.get_OBJ(instance) <<") - ";
+							log<<"(2, 25, " << uBest.get_OBJ(instance) <<") - ";
+						}
+	        	    }
+					else if (rand_ls < 25) {
+                            // continue;
+						if (NLS_local_search::dp_with_k_exchange_ver3(instance, uBest, alpha, beta, 3, 7, 0.0001)) {
+							flag_ls = true;
+							cerr<<"(3, 7, " << uBest.get_OBJ(instance) <<") - ";
+							log<<"(3, 7, " << uBest.get_OBJ(instance) <<") - ";
+						}
+					}
+					else if (rand_ls < 25) {
+                            // continue;
+						if (NLS_local_search::dp_with_k_exchange_ver3(instance, uBest, alpha, beta, 4, 3, 0.0001)) {
+							flag_ls = true;
+							cerr<<"(4, 3, " << uBest.get_OBJ(instance) <<") - ";
+							log<<"(4, 3, " << uBest.get_OBJ(instance) <<") - ";
+						}
+					}
+					else {
+                            // continue;
+						if (NLS_local_search::dp_with_k_exchange_ver3(instance, uBest, alpha, beta, 11, 1, 0.0001)) {
+							flag_ls = true;
+							cerr<<"(11, 1, " << uBest.get_OBJ(instance) <<") - ";
+							log<<"(11, 1, " << uBest.get_OBJ(instance) <<") - ";
+						}
+					}
 
-                string BKS_file = "BKS/" + config::test + "_" + to_string(gBest.get_OBJ(instance)) + ".res"; 
-                ofstream BKS(BKS_file);
-                    cerr << "?? " << BKS_file << '\n';
-                for (int i = 1; i <= instance.numInterventions; ++i) {
-                    BKS << instance.Intervention_name[i] << " " << gBest.Time_Start_Intervention[i] << '\n';
-                }
-                BKS.close();
+                        // cerr << "#dm\n";
+            	}
+
+            	cerr << "\n";
+            	log << "\n";
+	        }
+
+            if ( gBest.getScore(instance, alpha, beta) > uBest.getScore(instance, alpha, beta) + 1e-6 ) {
+               
+                flag_uBest = 0;
+                gBest = uBest;
+                iBest = uBest;
+                addRan = 10;
+
+                //while ( NLS_local_search::dp_Change_time_interventions_more_complex(instance, gBest, alpha, beta, 0.0001 )) {
+                //    cerr << gBest.get_OBJ(instance) <<" ";
+                //}
+
+                cerr << "\nnew best solution = " << gBest.get_OBJ(instance) 
+                    //<< " " << "LB_cost = " << gBest.LBResources_cost << " " 
+                    //<< " " << "UB_cost = " << gBest.UBResources_cost << " "
+                    << " found at: " << (double)(clock() - startTime) / CLOCKS_PER_SEC << '\n';
+
+                log << "\nnew best solution = " << gBest.get_OBJ(instance) 
+                    << " found at: " << (double)(clock() - startTime) / CLOCKS_PER_SEC << '\n';
+                
+            	for (int i = 1; i <= instance.numInterventions; ++i) {
+                	log << instance.Intervention_name[i] << " " << gBest.Time_Start_Intervention[i] << '\n';
+            	}
+
             }
+            else if (addRan > 0)
+            	addRan = addRan - 1;
+
+            cerr<< "time: " << (double)(clock() - startTime) / CLOCKS_PER_SEC;
+            if ( flag_gBest ) cerr << " ----------------------------------------> " << gBest.get_OBJ(instance) << '\n';
+            else cerr << " --> " << -1 << '\n';
 
             /// update phe
             if ( flag_iBest ) {
+            	
                 for (int i = 1; i <= instance.numInterventions; ++i) {
                     int time_start = iBest.Time_Start_Intervention[i];
-                    for (int t = 1; t <= instance.tmax[i]; ++t) 
+                    
+                    for (int t = 1; t <= instance.tmax[i]; ++t) {
                         if (t == time_start) phe[i][t] = phe[i][t] * Rho + Phe_max * (1-Rho);
                         else phe[i][t] = phe[i][t] * Rho + Phe_min * (1-Rho);
+                        
+                    }
+                    
+                }
+
+                if (loop - lastLoop > 30) {
+                	lastLoop = loop;
+                	cerr <<"reset pheromone...\n";
+                	addRan = 10;
+                	for (int i = 1; i <= instance.numInterventions; ++i) 
+                    	for (int t = 1; t <= instance.tmax[i]; ++t) 
+                    		phe[i][t] = Phe_max;
+
                 }
             }
+
         }
 
         cerr << "ACO FINISH TIME = " << (double)(clock() - startTime) / CLOCKS_PER_SEC << '\n';
@@ -400,20 +490,19 @@ namespace ACO_solution {
             for (int i = 1; i <= instance.numInterventions; ++i) {
                 out << instance.Intervention_name[i] << " " << gBest.Time_Start_Intervention[i] << '\n';
             }
-            out.close();
 
-            cerr << "OBJ1 = " << setprecision(5) << fixed << gBest.obj1 << '\n';
-            cerr << "OBJ2 = " << setprecision(5) << fixed << gBest.obj2 << '\n';
-            cerr << "OBJ = " << setprecision(5) << fixed << gBest.get_OBJ(instance) << '\n';
-                
-                double cc = 0;
-                for (int t = 1; t <= instance.T; ++t) {
-                    int pos = ceil( instance.quantile * gBest.Q[t].size() ) - 1;
-                    double Q_quantile = gBest.Q[t][pos];
-                    cc += Q_quantile;
-                }
-                cerr << "quantile = " << instance.quantile << '\n';
-                cerr << "SUMQ = " << cc << " " << cc/instance.T << " " << cc/instance.T * instance.alpha << '\n';
+            cerr <<setprecision(7) << fixed << "OBJ1 = " << gBest.obj1 << '\n';
+            cerr <<setprecision(7) << fixed << "OBJ2 = " << gBest.obj2 << '\n';
+            cerr <<setprecision(7) << fixed << "OBJ = " << gBest.get_OBJ(instance) << '\n';
+
+
+            for (int i = 1; i <= instance.numInterventions; ++i) {
+                log << instance.Intervention_name[i] << " " << gBest.Time_Start_Intervention[i] << '\n';
+            }
+
+            log <<setprecision(7) << fixed << "OBJ1 = " << gBest.obj1 << '\n';
+            log <<setprecision(7) << fixed << "OBJ2 = " << gBest.obj2 << '\n';
+            log <<setprecision(7) << fixed << "OBJ = " << gBest.get_OBJ(instance) << '\n';
             // LAG O? DA^Y QUA'
     }
 }

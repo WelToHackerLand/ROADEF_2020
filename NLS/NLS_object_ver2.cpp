@@ -227,7 +227,7 @@ struct NLS_object {
 
     void Insert_no_care_UB(Problem_Instance &instance, int i, int start_Time, 
         int &numAcceptedLB, int &numViolatedUB, double &costLB, double &costUB) {
-        if ( start_Time > instance.tmax[i] ) { 
+        if ( start_Time > instance.tmax[i] || start_Time == 0 ) { 
             cerr << "ERROR!!!: start_Time > tmax(i) ===> " << start_Time << " " << instance.tmax[i] << '\n'; 
             assert(1 == 0); exit(0); 
         }
@@ -321,7 +321,7 @@ struct NLS_object {
         numFailedIntervention--;
     }
     void Erase_no_care_UB(Problem_Instance &instance, int i, int start_Time, int &numAcceptedLB, int& numViolatedUB) {
-        if ( start_Time > instance.tmax[i] ) { 
+        if ( start_Time > instance.tmax[i] || start_Time == 0 ) { 
             cerr << "ERROR!!!: start_Time > tmax(i)\n"; 
             assert(1 == 0); exit(0); 
         }
@@ -421,7 +421,7 @@ struct NLS_object {
     }
 
     void Insert_Only_Resources(Problem_Instance &instance, NLS_object &obj, int i, int start_Time) {
-        if ( start_Time > instance.tmax[i] ) { 
+        if ( start_Time > instance.tmax[i] || start_Time == 0 ) { 
             cerr << "ERROR!!!: start_Time > tmax(i)\n"; 
             assert(1 == 0); exit(0); 
         }
@@ -440,7 +440,7 @@ struct NLS_object {
     }
 
     void Erase_Only_Resources(Problem_Instance &instance, NLS_object &obj, int i, int start_Time) {
-        if ( start_Time > instance.tmax[i] ) { 
+        if ( start_Time > instance.tmax[i] || start_Time == 0 ) { 
             cerr << "ERROR!!!: start_Time > tmax(i)\n"; 
             assert(1 == 0); exit(0); 
         }

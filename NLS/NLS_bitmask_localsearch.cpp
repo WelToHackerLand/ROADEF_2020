@@ -75,18 +75,18 @@ namespace NLS_bitmask_localsearch {
                     if ( !dp[type][nMask].valid || dp[type][nMask].get_OBJ(instance)-newScore > 1e-9 ) dp[type][nMask] = tmpOBJ;
                     tmpOBJ.Erase_no_care_UB(instance, inter, t, nAC, nVL);
                         
-                        for (int cc = 1; cc <= instance.numInterventions; ++cc) {
-                            if ( tmpOBJ.Time_Start_Intervention[cc] != dp[type][mask].Time_Start_Intervention[cc] ) {
-                                for (int i = 1; i <= instance.numInterventions; ++i) cerr << dp[type][mask].Time_Start_Intervention[i] << " ";
-                                cerr << '\n';
-                                for (int i = 1; i <= instance.numInterventions; ++i) cerr << tmpOBJ.Time_Start_Intervention[i] << " ";
-                                cerr << '\n';
+                        // for (int cc = 1; cc <= instance.numInterventions; ++cc) {
+                        //     if ( tmpOBJ.Time_Start_Intervention[cc] != dp[type][mask].Time_Start_Intervention[cc] ) {
+                        //         for (int i = 1; i <= instance.numInterventions; ++i) cerr << dp[type][mask].Time_Start_Intervention[i] << " ";
+                        //         cerr << '\n';
+                        //         for (int i = 1; i <= instance.numInterventions; ++i) cerr << tmpOBJ.Time_Start_Intervention[i] << " ";
+                        //         cerr << '\n';
 
-                                cerr << dp[type][mask].Time_Start_Intervention[lsTime[id+1].second] << '\n';
-                                cerr << "xxx\n";
-                                exit(0);
-                            }
-                        }
+                        //         cerr << dp[type][mask].Time_Start_Intervention[lsTime[id+1].second] << '\n';
+                        //         cerr << "xxx\n";
+                        //         exit(0);
+                        //     }
+                        // }
                 }
 
                 if ( id >= (int) lsTime.size()-1 ) continue;
