@@ -370,7 +370,11 @@ namespace ACO_solution {
             	log << "\napply more local search for uBest ("<<flag_uBest<<")...";
             	flag_uBest = 0;
             	flag_ls = true;
-           
+
+                assert( uBest.numFailedIntervention == 0 );
+                assert( uBest.LBResources_cost < 1e-6 );
+                assert( uBest.UBResources_cost < 1e-6 );
+
             	while (flag_ls) {
 
             		flag_ls = NLS_local_search::opt2_version2(instance, uBest, alpha, beta, 30, 5, 0.0001);
@@ -414,6 +418,10 @@ namespace ACO_solution {
 
                         // cerr << "#dm\n";
             	}
+
+                    assert( uBest.numFailedIntervention == 0 );
+                    assert( uBest.LBResources_cost < 1e-6 );
+                    assert( uBest.UBResources_cost < 1e-6 );
 
             	cerr << "\n";
             	log << "\n";
